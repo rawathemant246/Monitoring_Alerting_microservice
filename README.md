@@ -2,6 +2,13 @@
 
 Production-ready infrastructure-as-code for a multi-tenant Prometheus → Mimir stack with HA alerting, Grafana dashboards, and tight cost controls.
 
+## Features
+- **Terraform AWS baseline** – S3 storage with lifecycle + optional cross-region replication, KMS CMK, and IRSA-ready IAM roles.
+- **Kubernetes manifests** – Prometheus Operator resources, alerting ruler rules, Grafana + dashboards, Memcached caches, billing exporter, and cert-manager mTLS issuers.
+- **Helm overlays** – Production-grade values plus local-kind overlays (single-binary Mimir, Prometheus Agent, NodePort access).
+- **Automation scripts** – Secret generation/rotation, lifecycle validation, Kubernetes apply helpers, smoketests, backups, linting, and local kind bring-up/teardown.
+- **Operational docs** – Runbooks, test plans, cache SLO policies, and README guidance for deployment, local testing, and DR strategy.
+
 ## Repository Layout
 
 ```
