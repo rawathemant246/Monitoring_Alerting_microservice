@@ -2,8 +2,6 @@ fullnameOverride: node-exporter
 serviceAccount:
   create: true
   name: node-exporter
-  annotations:
-    eks.amazonaws.com/role-arn: "${NODE_EXPORTER_ROLE_ARN:-}"
 podLabels:
   app.kubernetes.io/part-of: mimir-observability
   monitoring.grafana.com/class: infra
@@ -18,6 +16,9 @@ serviceMonitor:
   additionalLabels:
     app.kubernetes.io/part-of: mimir-observability
     monitoring.grafana.com/scope: monitoring
+  metricRelabelings:
+    - targetLabel: scrape_class
+      replacement: infra
 resources:
   requests:
     cpu: 50m

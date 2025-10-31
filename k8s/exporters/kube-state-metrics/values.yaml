@@ -23,6 +23,9 @@ serviceMonitor:
   additionalLabels:
     app.kubernetes.io/part-of: mimir-observability
     monitoring.grafana.com/scope: monitoring
+  metricRelabelings:
+    - targetLabel: scrape_class
+      replacement: infra
 resources:
   requests:
     cpu: 100m

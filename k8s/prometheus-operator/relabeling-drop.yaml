@@ -32,6 +32,43 @@ stringData:
         - action: drop
           source_labels: [__name__]
           regex: "probe_http_ssl_*"
+    - job_name: blackbox-tcp
+      metrics_path: /probe
+      scrape_interval: 60s
+      params:
+        module: [tcp_connect]
+      static_configs:
+        - targets:
+            - api.${BASE_DOMAIN}:443
+            - mimir.${BASE_DOMAIN}:443
+          labels:
+            tenant_id: "${TENANT_ID}"
+            scrape_class: "infra"
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - target_label: __address__
+          replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+        - source_labels: [__param_target]
+          target_label: instance
+    - job_name: blackbox-dns
+      metrics_path: /probe
+      scrape_interval: 300s
+      params:
+        module: [dns_udp]
+      static_configs:
+        - labels:
+            tenant_id: "${TENANT_ID}"
+            scrape_class: "noisy"
+          targets:
+            - ${BASE_DOMAIN}
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - target_label: __address__
+          replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+        - source_labels: [__param_target]
+          target_label: instance
     - job_name: app-hot-job
       scrape_interval: 30s
       kubernetes_sd_configs:

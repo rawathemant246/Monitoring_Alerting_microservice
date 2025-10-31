@@ -71,6 +71,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/mimir#ingester",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -138,6 +145,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/mimir#compactor",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -210,6 +224,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/mimir#query-latency",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -227,6 +248,74 @@
         }
       ],
       "title": "Query Latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "semi-dark"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "lineWidth": 2,
+            "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 14,
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/mimir#ruler-lag",
+          "targetBlank": true
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "max by (tenant) (time() - cortex_ruler_last_evaluation_time_seconds)",
+          "legendFormat": "{{tenant}} eval lag",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Ruler Evaluation Lag",
       "type": "timeseries"
     }
   ],

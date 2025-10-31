@@ -22,6 +22,18 @@ spec:
           expr: |
             clamp_min(sum(rate(http_requests_total{code=~"5.."}[5m])) by (job)
               / clamp_min(sum(rate(http_requests_total[5m])) by (job), 1), 0)
+        - record: job:http_request_error_ratio:30m
+          expr: |
+            clamp_min(sum(rate(http_requests_total{code=~"5.."}[30m])) by (job)
+              / clamp_min(sum(rate(http_requests_total[30m])) by (job), 1), 0)
+        - record: job:http_request_error_ratio:1h
+          expr: |
+            clamp_min(sum(rate(http_requests_total{code=~"5.."}[1h])) by (job)
+              / clamp_min(sum(rate(http_requests_total[1h])) by (job), 1), 0)
+        - record: job:http_request_error_ratio:6h
+          expr: |
+            clamp_min(sum(rate(http_requests_total{code=~"5.."}[6h])) by (job)
+              / clamp_min(sum(rate(http_requests_total[6h])) by (job), 1), 0)
         - record: job:http_request_latency_seconds:p95
           expr: |
             histogram_quantile(0.95,

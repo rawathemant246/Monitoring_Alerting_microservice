@@ -69,6 +69,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/slos#fast-burn",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -140,6 +147,13 @@
         },
         "textMode": "auto"
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/slos#medium-burn",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -200,6 +214,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/slos#success-rate",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",

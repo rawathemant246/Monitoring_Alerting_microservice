@@ -84,6 +84,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/prometheus#scrape-duration",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -148,6 +155,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/prometheus#head-series",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -217,6 +231,13 @@
           "sort": "desc"
         }
       },
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/prometheus#query-latency",
+          "targetBlank": true
+        }
+      ],
       "targets": [
         {
           "editorMode": "code",
@@ -227,6 +248,74 @@
         }
       ],
       "title": "Query Engine p95 Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-RdYlGn"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "orange",
+                "value": 100
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 4,
+      "links": [
+        {
+          "title": "Runbook",
+          "url": "$__env{RUNBOOK_BASE_URL}/alertmanager#queue-depth",
+          "targetBlank": true
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "expr": "sum(alertmanager_notifications_queue_length)",
+          "legendFormat": "Queue depth",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Alertmanager Notification Queue",
       "type": "timeseries"
     }
   ],

@@ -23,13 +23,18 @@ fi
 MANIFESTS=(
   "${ROOT}/k8s/namespaces.yaml"
   "${ROOT}/k8s/certs/mtls-issuer.yaml"
+  "${ROOT}/k8s/certs/component-certs.yaml"
   "${ROOT}/k8s/mimir/limits.yaml"
+  "${ROOT}/k8s/mimir/autoscaling/hpa.yaml"
   "${ROOT}/k8s/prometheus-operator/relabeling-drop.yaml"
+  "${ROOT}/k8s/prometheus-operator/podMonitors/app-workloads.yaml"
   "${ROOT}/k8s/prometheus-operator/serviceMonitors/mimir.yaml"
   "${ROOT}/k8s/prometheus-operator/serviceMonitors/memcached.yaml"
   "${ROOT}/k8s/prometheus-operator/serviceMonitors/otel-collector.yaml"
+  "${ROOT}/k8s/prometheus-operator/recording-rules/cardinality_guard.yaml"
   "${ROOT}/k8s/prometheus-operator/recording-rules/cpu_mem_net.yaml"
   "${ROOT}/k8s/prometheus-operator/recording-rules/slo_latency_histograms.yaml"
+  "${ROOT}/k8s/prometheus-operator/recording-rules/autoscale_signals.yaml"
   "${ROOT}/k8s/prometheus-operator/prometheus.yaml"
 )
 

@@ -63,4 +63,8 @@ run_curl smoke-alertmanager sh -c "
   curl -sSk https://alertmanager-operated.monitoring.svc.cluster.local:9093/api/v2/status | grep 'cluster'
 "
 
+run_curl smoke-blackbox sh -c "
+  curl -sSk -H 'X-Scope-OrgID: ${TENANT_ID}' '${QUERY_ENDPOINT}/query?query=avg_over_time(probe_success[5m])' | grep '\"status\":\"success\"'
+"
+
 echo "All smoke tests passed."

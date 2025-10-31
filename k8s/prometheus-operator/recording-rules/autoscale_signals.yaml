@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: autoscale-signals
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/shared-rules: "true"
+    monitoring.grafana.com/rule-type: recording
+spec:
+  groups:
+    - name: autoscale_signals
+      rules:
+        - record: cluster:prometheus_scrape_duration_seconds:95p
+          expr: |
+            histogram_quantile(0.95, sum(rate(prometheus_target_interval_length_seconds_bucket[5m])) by (le))
+        - record: cluster:prometheus_head_series:sum
+          expr: sum(prometheus_tsdb_head_series)
+        - record: cluster:prometheus_wal_fsync_duration_seconds:avg
+          expr: avg(rate(prometheus_tsdb_wal_fsync_duration_seconds_sum[5m]))
+        - record: mimir:query_inflight:sum
+          expr: sum(cortex_query_frontend_queries_in_flight)
+        - record: mimir:querier_inflight:sum
+          expr: sum(cortex_querier_queries_in_flight)
+        - record: mimir:store_gateway_queries:sum
+          expr: sum(cortex_storegateway_queries)

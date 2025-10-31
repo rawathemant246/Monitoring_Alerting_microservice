@@ -32,6 +32,11 @@ alertmanager:
     configSecret: alertmanager-config
     additionalPeers:
       - alertmanager-operated.monitoring.svc.cluster.local:6783
+    web:
+      tlsConfig:
+        secretName: alertmanager-mtls
+        caSecretName: monitoring-ca
+      externalUri: https://alertmanager.${BASE_DOMAIN}
   configSecret:
     name: alertmanager-config
     annotations: {}

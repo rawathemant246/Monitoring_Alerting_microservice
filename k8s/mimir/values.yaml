@@ -91,6 +91,7 @@ mimir:
       log_queries_longer_than: 10s
       query_result_response_cache_max_bytes: 1048576
       compress_http_responses: true
+      max_outstanding_per_tenant: 64
     query_scheduler:
       max_outstanding_requests_per_tenant: 200
     querier:
@@ -241,6 +242,16 @@ gateway:
       alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
       alb.ingress.kubernetes.io/actions.ssl-redirect: >
         {"type":"redirect","redirectConfig":{"protocol":"HTTPS","port":"443","statusCode":"HTTP_301"}}
+      alb.ingress.kubernetes.io/auth-type: oidc
+      alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+      alb.ingress.kubernetes.io/auth-session-cookie: mimir-auth
+      alb.ingress.kubernetes.io/auth-session-timeout: "3600"
+      alb.ingress.kubernetes.io/auth-scope: "openid profile email"
+      alb.ingress.kubernetes.io/auth-oidc-issuer: ${OIDC_ISSUER}
+      alb.ingress.kubernetes.io/auth-oidc-token-endpoint: ${OIDC_ISSUER}/token
+      alb.ingress.kubernetes.io/auth-oidc-user-info-endpoint: ${OIDC_ISSUER}/userinfo
+      alb.ingress.kubernetes.io/auth-oidc-client-id: ${OIDC_CLIENT_ID}
+      alb.ingress.kubernetes.io/auth-oidc-client-secret: ${OIDC_CLIENT_SECRET}
     hosts:
       - host: mimir.${BASE_DOMAIN}
         paths:

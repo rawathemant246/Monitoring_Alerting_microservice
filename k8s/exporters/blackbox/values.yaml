@@ -2,8 +2,6 @@ fullnameOverride: blackbox-exporter
 serviceAccount:
   create: true
   name: blackbox-exporter
-  annotations:
-    eks.amazonaws.com/role-arn: "${BLACKBOX_EXPORTER_ROLE_ARN:-}"
 allowIcmp: true
 config:
   modules:

@@ -2,33 +2,29 @@ groups:
   - name: http_slo
     interval: 1m
     rules:
-      - record: job:http_request:rate5m
-        expr: sum by (job)(rate(http_requests_total{code!~"5.."}[5m]))
-      - alert: SLOErrorBudgetBurn
+      - alert: SLOErrorBudgetBurnFast
         expr: |
-          (
-            sum(rate(http_requests_total{code=~"5.."}[5m])) /
-            clamp_min(sum(rate(http_requests_total[5m])), 1)
-          ) > 0.02
-        for: 1h
+          job:http_request_error_ratio:5m{job!=""} > 0.14
+          and
+          job:http_request_error_ratio:1h{job!=""} > 0.02
+        for: 5m
         labels:
           severity: "page"
           team: platform
         annotations:
-          summary: "SLO burn >2% over 1h"
+          summary: "Fast burn-rate >14% over 5m and >2% over 1h"
           description: |
-            Service {{ $labels.job }} is burning error budget faster than expected.
-      - alert: SLOErrorBudgetBurn6h
+            Service {{ $labels.job }} is burning error budget rapidly. Escalate immediately.
+      - alert: SLOErrorBudgetBurnMedium
         expr: |
-          (
-            sum(rate(http_requests_total{code=~"5.."}[30m])) /
-            clamp_min(sum(rate(http_requests_total[30m])), 1)
-          ) > 0.01
-        for: 6h
+          job:http_request_error_ratio:30m{job!=""} > 0.05
+          and
+          job:http_request_error_ratio:6h{job!=""} > 0.01
+        for: 30m
         labels:
           severity: "warning"
           team: platform
         annotations:
-          summary: "SLO burn >1% over 6h"
+          summary: "Moderate burn-rate >5% over 30m and >1% over 6h"
           description: |
-            Service {{ $labels.job }} is consuming 1% error budget within 6h.
+            Service {{ $labels.job }} is consuming error budget faster than planned. Plan mitigation.

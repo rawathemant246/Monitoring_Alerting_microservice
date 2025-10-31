@@ -1,0 +1,84 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-mtls
+  namespace: monitoring
+spec:
+  secretName: prometheus-mtls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: monitoring-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - prometheus-operated.monitoring.svc.cluster.local
+    - prometheus-operated.monitoring.svc
+    - prometheus-operated
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mimir-mtls
+  namespace: monitoring
+spec:
+  secretName: mimir-mtls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: monitoring-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - '*.mimir-distributed.monitoring.svc.cluster.local'
+    - '*.mimir-distributed.monitoring.svc'
+    - '*.monitoring.svc.cluster.local'
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alertmanager-mtls
+  namespace: monitoring
+spec:
+  secretName: alertmanager-mtls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: monitoring-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - alertmanager-operated.monitoring.svc.cluster.local
+    - alertmanager-operated.monitoring.svc
+    - alertmanager-operated
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  namespace: monitoring
+spec:
+  secretName: grafana-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: monitoring-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - grafana.${BASE_DOMAIN}
+    - grafana.monitoring.svc.cluster.local
+    - grafana.monitoring.svc
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mimir-gateway-tls
+  namespace: monitoring
+spec:
+  secretName: mimir-gateway-tls
+  duration: 2160h
+  renewBefore: 360h
+  issuerRef:
+    name: monitoring-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - mimir.${BASE_DOMAIN}
+    - mimir-gateway.monitoring.svc.cluster.local
+    - mimir-gateway.monitoring.svc

@@ -28,7 +28,7 @@ spec:
       relabelings:
         - action: replace
           targetLabel: scrape_class
-          sourceLabels: [monitoring_grafana_com_class]
+          sourceLabels: [__meta_kubernetes_pod_label_monitoring_grafana_com_class]
         - action: labelmap
           regex: __meta_kubernetes_pod_label_(.+)
       metricRelabelings:
