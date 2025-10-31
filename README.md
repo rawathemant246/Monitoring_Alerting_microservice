@@ -14,6 +14,75 @@ k8s/                      # Kubernetes manifests & Helm values
 scripts/                  # Helper scripts (apply, secrets, smoke tests)
 ```
 
+## Architecture Diagram
+
+```mermaid
+graph LR
+  subgraph Clients & Workloads
+    SDKs["App SDKs & Instrumented Services"]
+    Exporters["Node / KSM Exporters"]
+    Blackbox["Blackbox Probes"]
+    PushGW["Pushgateway"]
+  end
+
+  subgraph Monitoring Namespace (multi-AZ)
+    OTel["OpenTelemetry Collector"]
+    PromShards["Prometheus Operator\n4 shards x 2 replicas"]
+    RRules["Recording Rules\n(only)"]
+    RemoteWrite["Remote Write"]
+    subgraph Caches
+      QCache["Memcached\nQuery Result Cache"]
+      IdxCache["Memcached\nIndex/Chunk Cache"]
+    end
+    subgraph Mimir["Grafana Mimir"]
+      Gateway["Tenancy Gateway\nX-Scope-OrgID"]
+      Distributor
+      Ingester
+      Querier
+      QFront["Query Frontend"]
+      Scheduler["Query Scheduler"]
+      StoreGW["Store Gateway"]
+      Compactor
+      Ruler
+    end
+    Alertmanager["Alertmanager HA\nmesh + persistence"]
+    Grafana["Grafana + OIDC"]
+  end
+
+  subgraph AWS
+    S3["S3 Object Storage\n(5m/1h downsampling)"]
+    KMS["KMS CMK"]
+  end
+
+  SDKs --> OTel
+  Exporters --> PromShards
+  Blackbox --> PromShards
+  PushGW --> PromShards
+  OTel --> PromShards
+  PromShards --> RRules
+  RRules --> PromShards
+  PromShards -.->|remote_write| RemoteWrite --> Distributor
+  Gateway --> Distributor
+  Distributor --> Ingester
+  Ingester --> S3
+  Compactor --> S3
+  StoreGW --> S3
+  Ingester --> Ruler
+  Ruler -->|alerts| Alertmanager
+  Ruler --> QFront
+  QFront --> Scheduler --> Querier
+  Grafana --> Gateway
+  Grafana --> QFront
+  PromShards -->|scrape metrics| Alertmanager
+  Gateway --> QCache
+  DistribCache[/"memcached"/]:::hidden
+  QFront --> QCache
+  StoreGW --> IdxCache
+
+  classDef hidden fill=transparent,stroke=transparent
+  KMS --> S3
+```
+
 ## Prerequisites
 
 - Terraform ≥ 1.5 with AWS credentials capable of creating S3, IAM, and KMS resources.
