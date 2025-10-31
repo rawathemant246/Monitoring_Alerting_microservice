@@ -17,40 +17,39 @@ scripts/                  # Helper scripts (apply, secrets, smoke tests)
 ## Architecture Diagram
 
 ```mermaid
-graph LR
-  subgraph Clients & Workloads
+graph TD
+  subgraph "Clients & Workloads"
     SDKs["App SDKs & Instrumented Services"]
     Exporters["Node / KSM Exporters"]
     Blackbox["Blackbox Probes"]
     PushGW["Pushgateway"]
   end
 
-  subgraph Monitoring Namespace (multi-AZ)
+  subgraph "Monitoring Namespace (multi-AZ)"
     OTel["OpenTelemetry Collector"]
     PromShards["Prometheus Operator\n4 shards x 2 replicas"]
     RRules["Recording Rules\n(only)"]
-    RemoteWrite["Remote Write"]
-    subgraph Caches
+    subgraph "Caches"
       QCache["Memcached\nQuery Result Cache"]
       IdxCache["Memcached\nIndex/Chunk Cache"]
     end
-    subgraph Mimir["Grafana Mimir"]
+    subgraph "Mimir"
       Gateway["Tenancy Gateway\nX-Scope-OrgID"]
-      Distributor
-      Ingester
-      Querier
+      Distributor["Distributor"]
+      Ingester["Ingester (replication=3)"]
+      Querier["Querier"]
       QFront["Query Frontend"]
       Scheduler["Query Scheduler"]
       StoreGW["Store Gateway"]
-      Compactor
-      Ruler
+      Compactor["Compactor (5m/1h downsample)"]
+      Ruler["Ruler"]
     end
-    Alertmanager["Alertmanager HA\nmesh + persistence"]
+    Alertmanager["Alertmanager HA"]
     Grafana["Grafana + OIDC"]
   end
 
-  subgraph AWS
-    S3["S3 Object Storage\n(5m/1h downsampling)"]
+  subgraph "AWS"
+    S3["S3 Object Storage"]
     KMS["KMS CMK"]
   end
 
@@ -61,26 +60,22 @@ graph LR
   OTel --> PromShards
   PromShards --> RRules
   RRules --> PromShards
-  PromShards -.->|remote_write| RemoteWrite --> Distributor
+  PromShards -- "remote_write" --> Distributor
   Gateway --> Distributor
   Distributor --> Ingester
   Ingester --> S3
   Compactor --> S3
   StoreGW --> S3
-  Ingester --> Ruler
-  Ruler -->|alerts| Alertmanager
+  KMS --> S3
+  Ruler --> Alertmanager
   Ruler --> QFront
-  QFront --> Scheduler --> Querier
+  QFront --> Scheduler
+  Scheduler --> Querier
   Grafana --> Gateway
   Grafana --> QFront
-  PromShards -->|scrape metrics| Alertmanager
-  Gateway --> QCache
-  DistribCache[/"memcached"/]:::hidden
-  QFront --> QCache
-  StoreGW --> IdxCache
-
-  classDef hidden fill=transparent,stroke=transparent
-  KMS --> S3
+  PromShards --> Alertmanager
+  QFront -. "result cache" .-> QCache
+  StoreGW -. "index cache" .-> IdxCache
 ```
 
 ## Prerequisites
