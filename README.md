@@ -189,6 +189,36 @@ Create a `.env` file at the repo root or export the following variables before r
 
    The smoke test verifies Mimir queries (including long-range downsampled data) and Alertmanager API health.
 
+## Local Test Environment (Kind)
+
+Spin up a single-node stack on macOS using kind + docker-compose to mock S3/memcached. Requirements: Docker Desktop (8 GB RAM recommended), `kind`, `kubectl`, `helm`, `curl`.
+
+```bash
+./scripts/local_up.sh        # create docker-compose deps, kind cluster, deploy Mimir single-binary, Prometheus Agent, Grafana, Alertmanager
+
+# Access
+#   Grafana:       http://localhost:3000  (admin/admin)
+#   Query frontend http://localhost:8080
+#   MinIO console  http://localhost:9000 (minio/minio123)
+
+./scripts/local_down.sh      # tear everything back down
+```
+
+Helpful checks after `local_up.sh`:
+
+```bash
+# Ready endpoint
+curl -sf http://localhost:8080/ready
+
+# List available metric names via query-frontend
+curl -s "http://localhost:8080/prometheus/api/v1/label/__name__/values" | jq '.data | length'
+
+# Inspect downsampled blocks in MinIO
+aws --endpoint-url http://localhost:9000 s3 ls s3://mimir --no-sign-request
+```
+
+The local deployment uses MinIO for object storage, a single-binary Mimir instance, Prometheus Agent (remote_write only), and disables mTLS/OIDC for simplicity. Services exposed via NodePort are mapped to localhost ports by `kind/local-cluster.yaml`.
+
 ### Cache Sizing Policy
 
 - Query result cache (`k8s/memcached/values-query-cache.yaml`) defaults to 4 Gi per pod with hit-rate SLO ≥0.6; `cache:query_frontend_result:hit_ratio` underpins the `QueryFrontendCacheHitRateLow` alert.

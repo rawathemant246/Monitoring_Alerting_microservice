@@ -1,0 +1,49 @@
+singleBinary:
+  replicas: 1
+  extraEnv:
+    - name: DISABLE_TLS
+      value: "true"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+mimir:
+  structuredConfig:
+    multitenancy_enabled: true
+    auth_enabled: true
+    server:
+      log_level: info
+      log_format: json
+    blocks_storage:
+      backend: s3
+      s3:
+        endpoint: http://minio:9000
+        bucket_name: mimir
+        access_key_id: minio
+        secret_access_key: minio123
+        insecure: true
+        s3_force_path_style: true
+    compactor:
+      enable_downsampling: true
+      sharding_enabled: false
+      working_directory: /data
+      data_dir: /data
+      downsampling:
+        - 5m
+        - 1h
+    limits:
+      ingestion_rate: 8000
+      ingestion_burst_size: 16000
+      max_query_length: 168h
+      max_query_parallelism: 8
+      retention_period: 48h
+    ruler:
+      enable_api: true
+      rule_path: /tmp/mimir/rules
+      alertmanager_url: http://alertmanager.monitoring.svc:9093
+      evaluation_interval: 30s
+    store_gateway:
+      sharding_enabled: false
