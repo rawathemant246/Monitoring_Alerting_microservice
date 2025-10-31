@@ -1,0 +1,34 @@
+fullnameOverride: kube-state-metrics
+replicas: 2
+serviceAccount:
+  create: true
+  name: kube-state-metrics
+podLabels:
+  app.kubernetes.io/part-of: mimir-observability
+  monitoring.grafana.com/class: infra
+collectors:
+  certificatesigningrequests: true
+  pods: true
+  deployments: true
+  statefulsets: true
+  horizontalpodautoscalers: true
+service:
+  labels:
+    monitoring.grafana.com/class: infra
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  honorLabels: true
+  additionalLabels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/scope: monitoring
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 300m
+    memory: 384Mi
+rbac:
+  create: true

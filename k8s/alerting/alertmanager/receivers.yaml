@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-receiver-secrets
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/part-of: mimir-observability
+type: Opaque
+stringData:
+  oncall_email: ${ONCALL_EMAIL}
+  pagerduty_routing_key: ${PD_KEY}
+  webhook_url: ${WEBHOOK_URL}

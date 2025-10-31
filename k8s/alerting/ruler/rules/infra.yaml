@@ -1,0 +1,34 @@
+groups:
+  - name: infra_health
+    interval: 1m
+    rules:
+      - alert: NodeHighCpuSustained
+        expr: |
+          avg(node:memory_bytes_used:ratio{job="node-exporter"}) by (instance) > 0.9
+        for: 15m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage above 90% for 15 minutes. Investigate pressure on {{ $labels.instance }}."
+      - alert: PrometheusWALPressure
+        expr: |
+          rate(prometheus_tsdb_wal_fsync_duration_seconds_sum[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Prometheus WAL fsync under pressure"
+          description: "WAL fsync duration is >0.5s. Check disk latency for Prometheus pods."
+      - alert: MimirCompactorLagging
+        expr: |
+          time() - max(cortex_compactor_last_successful_compaction_timestamp_seconds) > 3600
+        for: 30m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Mimir compactor lagging"
+          description: "No successful compaction within the last hour. Check compactor pods."

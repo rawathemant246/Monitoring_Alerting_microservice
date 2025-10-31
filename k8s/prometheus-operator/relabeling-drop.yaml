@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-additional-scrape
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: mimir-observability
+type: Opaque
+stringData:
+  scrape-configs.yaml: |
+    - job_name: blackbox-http
+      metrics_path: /probe
+      scrape_interval: 60s
+      params:
+        module: [http_2xx]
+      static_configs:
+        - targets:
+            - https://status.${BASE_DOMAIN}/healthz
+            - https://api.${BASE_DOMAIN}/readyz
+          labels:
+            tenant_id: "${TENANT_ID}"
+            scrape_class: "noisy"
+      relabel_configs:
+        - source_labels: [__address__]
+          target_label: __param_target
+        - target_label: __address__
+          replacement: blackbox-exporter.monitoring.svc.cluster.local:9115
+        - source_labels: [__param_target]
+          target_label: instance
+      metric_relabel_configs:
+        - action: drop
+          source_labels: [__name__]
+          regex: "probe_http_ssl_*"
+    - job_name: app-hot-job
+      scrape_interval: 30s
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ["apps"]
+      relabel_configs:
+        - action: keep
+          source_labels: [__meta_kubernetes_pod_label_app]
+          regex: hot-api
+        - action: hashmod
+          source_labels: [__address__]
+          modulus: 4
+          target_label: __tmp_hash
+        - action: keep
+          source_labels: [__tmp_hash]
+          regex: '$(SHARD_SLOT)'
+        - action: replace
+          target_label: scrape_class
+          replacement: app
+        - action: drop
+          source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape_slow]
+          regex: "true"
+        - action: labeldrop
+          regex: "(pod_uid|pod_template_hash|controller_revision_hash)"
+      metric_relabel_configs:
+        - action: drop
+          source_labels: [__name__]
+          regex: "go_gc_duration_seconds.*"
+        - action: drop
+          source_labels: [tenant_id]
+          regex: "debug|test"

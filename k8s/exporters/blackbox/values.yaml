@@ -1,0 +1,44 @@
+fullnameOverride: blackbox-exporter
+serviceAccount:
+  create: true
+  name: blackbox-exporter
+  annotations:
+    eks.amazonaws.com/role-arn: "${BLACKBOX_EXPORTER_ROLE_ARN:-}"
+allowIcmp: true
+config:
+  modules:
+    http_2xx:
+      prober: http
+      timeout: 10s
+      http:
+        preferred_ip_protocol: "ip4"
+        tls_config:
+          insecure_skip_verify: false
+    tcp_connect:
+      prober: tcp
+      timeout: 5s
+    dns_udp:
+      prober: dns
+      timeout: 5s
+      dns:
+        query_name: "${BASE_DOMAIN}"
+        query_type: "A"
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  additionalLabels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/class: infra
+persistence:
+  enabled: false
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus-blackbox-exporter
+          topologyKey: topology.kubernetes.io/zone

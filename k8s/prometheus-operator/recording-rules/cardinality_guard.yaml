@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cardinality-budgets
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/shared-rules: "true"
+    monitoring.grafana.com/rule-type: recording
+spec:
+  groups:
+    - name: cardinality_budgets
+      interval: 5m
+      rules:
+        - record: job:max_series_budget
+          expr: scalar(800000)
+          labels:
+            job: "infra"
+        - record: job:max_series_budget
+          expr: scalar(400000)
+          labels:
+            job: "app"
+        - record: job:max_series_budget
+          expr: scalar(100000)
+          labels:
+            job: "noisy"
+        - record: job:metric_series:count
+          expr: |
+            count(count by (__name__, job) ({__name__!~"prometheus_tsdb.+|go_.+|process_.+"}))
+        - record: job:series_budget:ratio
+          expr: |
+            sum(max_over_time(scrape_samples_post_metric_relabeling[5m])) by (job)
+             / clamp_min(sum(job:max_series_budget{job!=""}) by (job), 1)
+        - alert: SeriesCardinalityBudgetExceeded
+          expr: |
+            job:series_budget:ratio > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cardinality budget over 80% for {{ $labels.job }}"
+            description: "Review label usage for job {{ $labels.job }}. Current ratio {{ $value | printf \"%.2f\" }}."
+        - alert: SeriesCardinalityBudgetHardLimit
+          expr: |
+            job:series_budget:ratio > 0.95
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cardinality budget exceeded for {{ $labels.job }}"
+            description: "Drop noisy metrics or tighten relabeling for {{ $labels.job }}."

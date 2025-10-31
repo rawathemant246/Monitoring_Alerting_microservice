@@ -1,0 +1,38 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: monitoring-selfsigned
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: monitoring-ca
+  namespace: cert-manager
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  isCA: true
+  commonName: monitoring-ca
+  secretName: monitoring-ca
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  privateKey:
+    algorithm: RSA
+    size: 4096
+  issuerRef:
+    name: monitoring-selfsigned
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: monitoring-ca
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  ca:
+    secretName: monitoring-ca

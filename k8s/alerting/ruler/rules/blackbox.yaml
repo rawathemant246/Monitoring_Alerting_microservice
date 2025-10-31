@@ -1,0 +1,25 @@
+groups:
+  - name: synthetic_probes
+    interval: 1m
+    rules:
+      - alert: BlackboxProbeFailed
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Blackbox probe failing for {{ $labels.instance }}"
+          description: |
+            Synthetic probe {{ $labels.instance }} has failed for more than 2 minutes.
+      - alert: BlackboxLatencyHigh
+        expr: |
+          increase(probe_duration_seconds_sum[15m])
+            / clamp_min(increase(probe_duration_seconds_count[15m]), 1) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Blackbox probe latency high"
+          description: "Probe latency above 800ms for {{ $labels.instance }} over the last 15 minutes."

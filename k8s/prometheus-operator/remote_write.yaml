@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mimir-remote-write
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: mimir-observability
+type: Opaque
+stringData:
+  token: ${MIMIR_REMOTE_WRITE_TOKEN}

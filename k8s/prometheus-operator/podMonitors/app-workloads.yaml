@@ -1,0 +1,46 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: workload-default
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: podmonitor-workload
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/scope: workloads
+spec:
+  namespaceSelector:
+    matchExpressions:
+      - key: monitoring.grafana.com/enabled
+        operator: In
+        values:
+          - "true"
+  selector:
+    matchExpressions:
+      - key: monitoring.grafana.com/class
+        operator: In
+        values:
+          - app
+          - infra
+          - noisy
+  podMetricsEndpoints:
+    - port: metrics
+      interval: 30s
+      relabelings:
+        - action: replace
+          targetLabel: scrape_class
+          sourceLabels: [monitoring_grafana_com_class]
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+      metricRelabelings:
+        - action: drop
+          sourceLabels: [__name__]
+          regex: "go_gc_duration_seconds|process_.*"
+    - port: metrics
+      interval: 300s
+      relabelings:
+        - action: replace
+          targetLabel: scrape_class
+          value: noisy
+      metricRelabelings:
+        - action: keep
+          regex: "(probe_.+|up)"

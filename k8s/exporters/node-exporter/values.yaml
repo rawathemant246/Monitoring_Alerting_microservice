@@ -1,0 +1,37 @@
+fullnameOverride: node-exporter
+serviceAccount:
+  create: true
+  name: node-exporter
+  annotations:
+    eks.amazonaws.com/role-arn: "${NODE_EXPORTER_ROLE_ARN:-}"
+podLabels:
+  app.kubernetes.io/part-of: mimir-observability
+  monitoring.grafana.com/class: infra
+service:
+  labels:
+    monitoring.grafana.com/class: infra
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+  honorLabels: true
+  additionalLabels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/scope: monitoring
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+daemonset:
+  hostNetwork: false
+  updateStrategy:
+    type: RollingUpdate
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux

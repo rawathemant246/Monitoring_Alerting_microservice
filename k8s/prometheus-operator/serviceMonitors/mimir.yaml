@@ -1,0 +1,55 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mimir
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/class: infra
+spec:
+  jobLabel: mimir
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mimir
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      scrapeTimeout: 15s
+      scheme: https
+      tlsConfig:
+        serverName: mimir.monitoring.svc.cluster.local
+        ca:
+          secret:
+            name: monitoring-ca
+            key: ca.crt
+        cert:
+          secret:
+            name: prometheus-mtls
+            key: tls.crt
+        keySecret:
+          name: prometheus-mtls
+          key: tls.key
+      relabelings:
+        - action: labeldrop
+          regex: "(controller_revision_hash|pod_template_hash)"
+    - port: http-head
+      interval: 60s
+      scrapeTimeout: 15s
+      scheme: https
+      tlsConfig:
+        serverName: mimir-ingester.monitoring.svc.cluster.local
+        ca:
+          secret:
+            name: monitoring-ca
+            key: ca.crt
+        cert:
+          secret:
+            name: prometheus-mtls
+            key: tls.crt
+        keySecret:
+          name: prometheus-mtls
+          key: tls.key

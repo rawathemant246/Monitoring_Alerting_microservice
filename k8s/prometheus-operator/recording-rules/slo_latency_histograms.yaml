@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-latency-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/shared-rules: "true"
+    monitoring.grafana.com/rule-type: recording
+spec:
+  groups:
+    - name: slo_latency_histograms
+      interval: 30s
+      rules:
+        - record: job:http_request:rate5m
+          expr: |
+            sum by (job) (rate(http_requests_total{code!~"5.."}[5m]))
+        - record: job:http_request_total:rate5m
+          expr: |
+            sum by (job) (rate(http_requests_total[5m]))
+        - record: job:http_request_error_ratio:5m
+          expr: |
+            clamp_min(sum(rate(http_requests_total{code=~"5.."}[5m])) by (job)
+              / clamp_min(sum(rate(http_requests_total[5m])) by (job), 1), 0)
+        - record: job:http_request_latency_seconds:p95
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+        - record: job:http_request_latency_seconds:p99
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))

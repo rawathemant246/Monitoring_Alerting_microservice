@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: memcached
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: memcached
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/class: infra
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values:
+          - mimir-query-cache
+          - mimir-index-cache
+  endpoints:
+    - port: metrics
+      interval: 60s
+      scrapeTimeout: 10s
+      path: /metrics

@@ -1,0 +1,182 @@
+replicas: 2
+rbac:
+  create: true
+serviceAccount:
+  create: true
+  name: grafana
+  annotations:
+    eks.amazonaws.com/role-arn: "${GRAFANA_IAM_ROLE_ARN}"
+env:
+  - name: TENANT_ID
+    value: "${TENANT_ID}"
+  - name: GF_FEATURE_TOGGLES_ENABLE
+    value: "tempoSearch traceqlEditor"
+  - name: GF_UNIFIED_ALERTING_ENABLED
+    value: "true"
+envValueFrom:
+  - name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
+    secretKeyRef:
+      name: grafana-oidc
+      key: client_id
+  - name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
+    secretKeyRef:
+      name: grafana-oidc
+      key: client_secret
+  - name: OIDC_ISSUER
+    secretKeyRef:
+      name: grafana-oidc
+      key: issuer
+  - name: GF_SERVER_ROOT_URL
+    secretKeyRef:
+      name: grafana-oidc
+      key: root_url
+  - name: GF_ALERTING_CONTACTPOINT_EMAIL_ADDRESSES
+    secretKeyRef:
+      name: grafana-alerting
+      key: email_list
+grafana.ini:
+  server:
+    root_url: "$__env{GF_SERVER_ROOT_URL}"
+    enforce_domain: true
+    protocol: https
+  security:
+    disable_gravatar: true
+    strict_transport_security: true
+  analytics:
+    reporting_enabled: false
+  auth:
+    disable_login_form: true
+    oauth_auto_login: true
+  auth.generic_oauth:
+    enabled: true
+    name: OIDC
+    client_id: "$__env{GF_AUTH_GENERIC_OAUTH_CLIENT_ID}"
+    client_secret: "$__env{GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET}"
+    scopes: openid profile email offline_access
+    auth_url: "$__env{OIDC_ISSUER}/authorize"
+    token_url: "$__env{OIDC_ISSUER}/token"
+    api_url: "$__env{OIDC_ISSUER}/userinfo"
+    login_attribute_path: email
+    role_attribute_path: contains(groups[*], 'admin') && 'Admin' || 'Editor'
+    allow_sign_up: true
+    use_pkce: true
+  auth.generic_oauth.json_data:
+    role_attribute_path_regex: true
+  unified_alerting:
+    enabled: true
+  tracing.opentelemetry:
+    address: tempo.monitoring.svc.cluster.local:4317
+    tls:
+      insecure: true
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    deleteDatasources: []
+    datasources:
+      - name: Mimir
+        type: prometheus
+        access: proxy
+        uid: mimir
+        url: https://mimir-query-frontend.monitoring.svc.cluster.local
+        jsonData:
+          httpHeaderName1: "X-Scope-OrgID"
+          timeInterval: 30s
+          prometheusType: Mimir
+          incrementalQuerying: true
+          exemplarTraceIdDestinations:
+            - name: Tempo
+              url: http://tempo-query-frontend.monitoring.svc.cluster.local:3200/trace/${__value.raw}
+        secureJsonData:
+          httpHeaderValue1: "${TENANT_ID}"
+        isDefault: true
+        editable: false
+      - name: Alertmanager
+        type: alertmanager
+        access: proxy
+        uid: alertmanager
+        url: https://alertmanager.monitoring.svc.cluster.local
+        jsonData:
+          implementation: prometheus
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: Observability
+        orgId: 1
+        folder: Observability
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards/observability
+      - name: Tenant
+        orgId: 1
+        folder: "${TENANT_ID}"
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards/tenant
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "true"
+    folderAnnotation: grafana_folder
+    searchNamespace: monitoring
+    defaultFolderName: Observability
+  datasources:
+    enabled: false
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClassName: gp3
+service:
+  type: ClusterIP
+  port: 443
+ingress:
+  enabled: true
+  ingressClassName: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/actions.ssl-redirect: >
+      {"type":"redirect","redirectConfig":{"protocol":"HTTPS","port":"443","statusCode":"HTTP_301"}}
+  hosts:
+    - grafana.${BASE_DOMAIN}
+  tls:
+    - secretName: grafana-tls
+      hosts:
+        - grafana.${BASE_DOMAIN}
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  scrapeInterval: 60s
+  labels:
+    monitoring.grafana.com/class: infra
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 60
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: grafana
+initChownData:
+  enabled: false

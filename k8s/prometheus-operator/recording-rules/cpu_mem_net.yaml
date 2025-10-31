@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: node-resource-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/shared-rules: "true"
+    monitoring.grafana.com/rule-type: recording
+spec:
+  groups:
+    - name: node_resource_overview
+      rules:
+        - record: cluster:node_cpu:utilization
+          expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))
+          labels:
+            class: infra
+        - record: node:memory_bytes_used:ratio
+          expr: |
+            1 - sum(node_memory_MemAvailable_bytes) by (instance)
+                / sum(node_memory_MemTotal_bytes) by (instance)
+        - record: node:net_bytes_transmitted:rate5m
+          expr: |
+            sum(rate(node_network_transmit_bytes_total{device!~"lo"}[5m])) by (instance)
+        - record: node:net_bytes_received:rate5m
+          expr: |
+            sum(rate(node_network_receive_bytes_total{device!~"lo"}[5m])) by (instance)
+        - record: job:container_cpu_usage_seconds:rate5m
+          expr: |
+            sum by (job, namespace) (rate(container_cpu_usage_seconds_total{container!=""}[5m]))
+        - record: job:container_memory_usage_bytes:mean
+          expr: |
+            sum by (job, namespace) (container_memory_working_set_bytes{container!=""})

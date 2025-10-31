@@ -1,0 +1,43 @@
+fullnameOverride: mimir-query-cache
+architecture: high-availability
+replicaCount: 3
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9150"
+  prometheus.io/path: "/metrics"
+args:
+  - "--conn-limit=4096"
+  - "--max-item-size=4m"
+  - "--verbosity=vv"
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 4Gi
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+persistence:
+  enabled: false
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 30s
+    selector:
+      matchLabels:
+        monitoring.grafana.com/class: infra
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: memcached
+        app.kubernetes.io/instance: mimir-query-cache
+networkPolicy:
+  enabled: true
+  allowExternal: false
