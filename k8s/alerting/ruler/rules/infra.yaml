@@ -24,11 +24,21 @@ groups:
           description: "WAL fsync duration is >0.5s. Check disk latency for Prometheus pods."
       - alert: MimirCompactorLagging
         expr: |
-          time() - max(cortex_compactor_last_successful_compaction_timestamp_seconds) > 3600
-        for: 30m
+          time() - max(cortex_compactor_last_successful_compaction_timestamp_seconds) > 7200
+        for: 15m
         labels:
           severity: warning
           team: sre
         annotations:
           summary: "Mimir compactor lagging"
-          description: "No successful compaction within the last hour. Check compactor pods."
+          description: "No successful compaction within the last 2 hours. Inspect compactor performance."
+      - alert: MimirCompactorBacklogHigh
+        expr: |
+          max(cortex_compactor_block_cleanup_pending) > 100 or max(cortex_compactor_runs_failed_total - cortex_compactor_runs_failed_total offset 15m) > 0
+        for: 10m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Mimir compactor backlog accumulating"
+          description: "Pending cleanup > 100 blocks or compactions failing. Check object storage latency and CPU limits."

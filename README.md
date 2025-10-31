@@ -109,6 +109,10 @@ Create a `.env` file at the repo root or export the following variables before r
 | `GRAFANA_IAM_ROLE_ARN`, `MIMIR_*_ROLE_ARN` | Optional IRSA role ARNs per component |
 | `NODE_EXPORTER_ROLE_ARN`, `KUBE_STATE_METRICS_ROLE_ARN`, `BLACKBOX_EXPORTER_ROLE_ARN` | Optional IRSA role ARNs for exporters |
 
+### Terraform Options
+
+- Set `enable_replication = true` along with `replication_destination_bucket_arn`, `replication_destination_bucket_region`, and (optionally) `replication_destination_kms_key_id` in `terraform/terraform.tfvars` to enable cross-region replication for disaster recovery.
+
 ### Labeling & Service Discovery
 
 - Opt workloads into scraping by labeling namespaces with `monitoring.grafana.com/enabled=true`.
@@ -176,12 +180,20 @@ Create a `.env` file at the repo root or export the following variables before r
    ./scripts/kube_apply.sh
    ```
 
+   This step also deploys the `billing-exporter`, cache health recording rules, and updated rate-limit configuration for the Mimir gateway.
+
 6. **Run smoke tests**
    ```bash
    ./scripts/smoke_tests.sh
    ```
 
-The smoke test verifies Mimir queries (including long-range downsampled data) and Alertmanager API health.
+   The smoke test verifies Mimir queries (including long-range downsampled data) and Alertmanager API health.
+
+### Cache Sizing Policy
+
+- Query result cache (`k8s/memcached/values-query-cache.yaml`) defaults to 4 Gi per pod with hit-rate SLO ≥0.6; `cache:query_frontend_result:hit_ratio` underpins the `QueryFrontendCacheHitRateLow` alert.
+- Store-gateway index/chunk caches (`k8s/memcached/values-index-cache.yaml`) allocate up to 8 Gi per pod with SLO ≥0.7 as enforced by `StoreGatewayCacheHitRateLow`.
+- For scale events, adjust memcached resource limits and monitor cache hit panels on the Grafana dashboards to ensure compliance.
 
 ## Notes
 
@@ -200,3 +212,11 @@ The smoke test verifies Mimir queries (including long-range downsampled data) an
 - Prometheus shards match only rules labeled `monitoring.grafana.com/rule-type=recording`; all alerting logic is owned by the central ruler (`k8s/alerting/ruler/rules`).
 - Exemplars are forwarded to Tempo via Grafana's exemplar trace ID mapping; ensure instrumented services emit exemplar data for end-to-end tracing.
 - Downsampling (5m/1h) is enabled via the compactor configuration in `k8s/mimir/values.yaml` and surfaced on the Mimir dashboard.
+- Gateway rate-limits enforce 120 req/s per tenant and 60 req/s per client IP with concurrency caps, protecting the query path from noisy neighbours.
+- Cache hit-rate recording rules (`k8s/prometheus-operator/recording-rules/cache_health.yaml`) and ruler alerts (`k8s/alerting/ruler/rules/cache-health.yaml`) back the documented memcached SLOs (>=0.6 for query frontend, >=0.7 for store-gateway).
+- Billing usage metrics are exposed via the `billing-exporter`; scrape it with Prometheus for per-tenant active series, samples/sec, and query time.
+- Use `k8s/mimir/values-dr.yaml` to deploy read-only queriers in a secondary cluster, pointing at the replicated bucket.
+- Runbooks for common tasks live in `docs/runbooks.md`.
+- Audit logging is enabled end-to-end: Mimir logs in JSON, the tenancy gateway emits JSON access logs, and Grafana writes structured JSON application/audit logs.
+- Secret rotation helpers: `scripts/rotate_secrets.sh` (OIDC, AWS, mTLS) and `scripts/check_retention.sh` (S3 lifecycle verification).
+- High-value failure and DR tests are catalogued in `docs/test-plan.md`; automate them in CI where possible.

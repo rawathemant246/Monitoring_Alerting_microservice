@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cache-health-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+    monitoring.grafana.com/shared-rules: "true"
+    monitoring.grafana.com/rule-type: recording
+spec:
+  groups:
+    - name: cache_health
+      interval: 1m
+      rules:
+        - record: cache:query_frontend_result:hit_ratio
+          expr: |
+            clamp_min(
+              sum(rate(cortex_query_frontend_result_cache_hits_total[5m])) by (cluster)
+              / clamp_min(sum(rate(cortex_query_frontend_result_cache_requests_total[5m])) by (cluster), 1),
+              0
+            )
+        - record: cache:store_gateway_index:hit_ratio
+          expr: |
+            clamp_min(
+              sum(rate(cortex_storegateway_bucket_index_cache_hits_total[5m])) by (cluster)
+              / clamp_min(sum(rate(cortex_storegateway_bucket_index_cache_requests_total[5m])) by (cluster), 1),
+              0
+            )
+        - record: cache:store_gateway_chunk:hit_ratio
+          expr: |
+            clamp_min(
+              sum(rate(cortex_storegateway_bucket_chunks_cache_hits_total[5m])) by (cluster)
+              / clamp_min(sum(rate(cortex_storegateway_bucket_chunks_cache_requests_total[5m])) by (cluster), 1),
+              0
+            )

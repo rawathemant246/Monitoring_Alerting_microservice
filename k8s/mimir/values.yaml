@@ -14,6 +14,7 @@ mimir:
     auth_enabled: true
     server:
       log_level: info
+      log_format: json
       http_listen_port: 8080
       grpc_listen_port: 9095
       http_tls_config:
@@ -58,6 +59,16 @@ mimir:
       downsampling:
         enabled: true
         resolutions: ["5m", "1h"]
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+        limits:
+          cpu: "4"
+          memory: 8Gi
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
     store_gateway:
       sharding_enabled: true
       sharding_ring:
@@ -219,6 +230,16 @@ mimir:
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: "${MIMIR_STORE_GATEWAY_ROLE_ARN}"
+    resources:
+      requests:
+        cpu: "2"
+        memory: 8Gi
+      limits:
+        cpu: "4"
+        memory: 16Gi
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 3
   compactor:
     serviceAccount:
       annotations:
@@ -263,14 +284,22 @@ gateway:
           - mimir.${BASE_DOMAIN}
   nginxConfig:
     httpSnippet: |
+      log_format audit escape=json '{"time":"$time_iso8601","org":"$scope_orgid","client":"$remote_addr","request":"$request","status":$status,"bytes":$body_bytes_sent,"duration":$request_time,"upstream":"$upstream_addr"}';
       map $http_x_scope_orgid $scope_orgid {
         default $http_x_scope_orgid;
         "" $http_x_tenant_id;
       }
+      limit_req_zone $scope_orgid zone=tenant_rate:10m rate=120r/s;
+      limit_req_zone $binary_remote_addr zone=ip_rate:10m rate=60r/s;
+      limit_conn_zone $scope_orgid zone=tenant_conn:10m;
     serverSnippet: |
       if ($scope_orgid = "") { return 403; }
       proxy_set_header X-Scope-OrgID $scope_orgid;
       proxy_set_header X-Forwarded-Proto https;
+      limit_req zone=tenant_rate burst=240 nodelay;
+      limit_req zone=ip_rate burst=120 nodelay;
+      limit_conn tenant_conn 64;
+      access_log /var/log/nginx/access.log audit;
   service:
     ports:
       http:

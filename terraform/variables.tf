@@ -65,3 +65,33 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_replication" {
+  description = "Enable cross-region replication for the Mimir bucket."
+  type        = bool
+  default     = false
+}
+
+variable "replication_destination_bucket_arn" {
+  description = "Destination bucket ARN for replication (required if enable_replication is true)."
+  type        = string
+  default     = ""
+}
+
+variable "replication_destination_bucket_region" {
+  description = "Region for the destination bucket."
+  type        = string
+  default     = ""
+}
+
+variable "replication_destination_kms_key_id" {
+  description = "KMS key ID/ARN used to encrypt replicated objects at destination."
+  type        = string
+  default     = ""
+}
+
+variable "replication_destination_account_id" {
+  description = "AWS account ID of the replication destination bucket owner."
+  type        = string
+  default     = ""
+}

@@ -12,3 +12,8 @@ output "mimir_component_role_arns" {
   description = "IAM role ARNs mapped by component."
   value       = { for name, role in aws_iam_role.mimir : name => role.arn }
 }
+
+output "replication_role_arn" {
+  description = "IAM role ARN used for S3 bucket replication (if enabled)."
+  value       = try(aws_iam_role.replication[0].arn, null)
+}

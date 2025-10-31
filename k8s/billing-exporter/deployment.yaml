@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: billing-exporter
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: billing-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: billing-exporter
+        app.kubernetes.io/part-of: mimir-observability
+        monitoring.grafana.com/class: infra
+    spec:
+      serviceAccountName: billing-exporter
+      containers:
+        - name: exporter
+          image: python:3.13-slim
+          command: ["python", "/app/exporter.py"]
+          env:
+            - name: QUERY_ENDPOINT
+              value: https://mimir-query-frontend.monitoring.svc.cluster.local/prometheus/api/v1/query
+            - name: QUERY_TENANT
+              value: system
+            - name: CA_CERT_PATH
+              value: /etc/mimir-ca/ca.crt
+            - name: LISTEN_PORT
+              value: "9105"
+          ports:
+            - name: http
+              containerPort: 9105
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: exporter-config
+              mountPath: /app
+            - name: mimir-ca
+              mountPath: /etc/mimir-ca
+              readOnly: true
+      volumes:
+        - name: exporter-config
+          configMap:
+            name: billing-exporter-config
+            defaultMode: 0555
+        - name: mimir-ca
+          secret:
+            secretName: mimir-mtls
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: billing-exporter
+    app.kubernetes.io/part-of: mimir-observability
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: billing-exporter
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  selector:
+    app.kubernetes.io/name: billing-exporter
+  ports:
+    - name: http
+      port: 9105
+      targetPort: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: billing-exporter
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: billing-exporter
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: billing-exporter
+  endpoints:
+    - port: http
+      interval: 30s
+      honorLabels: true

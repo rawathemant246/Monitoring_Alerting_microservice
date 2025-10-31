@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring-tests
+  labels:
+    monitoring.grafana.com/enabled: "true"
+    monitoring.grafana.com/class: app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-metrics
+  namespace: monitoring-tests
+  labels:
+    app: sample-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-metrics
+  template:
+    metadata:
+      labels:
+        app: sample-metrics
+        monitoring.grafana.com/class: app
+    spec:
+      containers:
+        - name: sample
+          image: prom/prometheus-example-app:v0.5.0
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: VERSION
+              value: "e2e"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-metrics
+  namespace: monitoring-tests
+  labels:
+    app: sample-metrics
+spec:
+  selector:
+    app: sample-metrics
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sample-metrics
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: mimir-observability
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring-tests
+  selector:
+    matchLabels:
+      app: sample-metrics
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      relabelings:
+        - action: replace
+          targetLabel: scrape_class
+          replacement: app

@@ -1,0 +1,87 @@
+# Helm values for deploying a read-only Mimir query stack in a secondary region.
+# Deploy with:
+#   envsubst < k8s/mimir/values-dr.yaml > /tmp/mimir-dr-values.yaml
+#   helm upgrade --install mimir-dr grafana/mimir-distributed -n monitoring -f /tmp/mimir-dr-values.yaml
+mimir:
+  replicas:
+    distributor: 0
+    ingester: 0
+    compactor: 0
+    ruler: 0
+    query_frontend: 2
+    querier: 4
+    store_gateway: 4
+  structuredConfig:
+    multitenancy_enabled: true
+    auth_enabled: true
+    server:
+      log_level: info
+      log_format: json
+    frontend_worker:
+      match_max_concurrent: true
+      parallelism: 16
+    frontend:
+      log_queries_longer_than: 5s
+      cache_results: true
+      results_cache:
+        cache:
+          backend: memcached
+          memcached_client:
+            addresses: ["dnssrvnoa+_tcp.mimir-index-cache.monitoring.svc.cluster.local"]
+            timeout: 500ms
+    querier:
+      query_ingesters_within: 0s
+      store_gateway_addresses: []
+    storage:
+      backend: s3
+      s3:
+        bucket_name: ${S3_BUCKET}
+        endpoint: s3.${AWS_REGION}.amazonaws.com
+        access_key_id: ${AWS_ACCESS_KEY_ID}
+        secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+        region: ${AWS_REGION}
+        sse:
+          type: kms
+          kms_key_id: ${KMS_KEY_ID}
+  storeGateway:
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: "${MIMIR_STORE_GATEWAY_ROLE_ARN}"
+    resources:
+      requests:
+        cpu: "2"
+        memory: 8Gi
+      limits:
+        cpu: "4"
+        memory: 16Gi
+  querier:
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: "${MIMIR_QUERIER_ROLE_ARN}"
+  queryFrontend:
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: "${MIMIR_QUERY_FRONTEND_ROLE_ARN}"
+    extraVolumes:
+      - name: tls-certs
+        secret:
+          secretName: mimir-mtls
+    extraVolumeMounts:
+      - name: tls-certs
+        mountPath: /etc/mimir/tls
+        readOnly: true
+  distributor:
+    enabled: false
+  ingester:
+    enabled: false
+  compactor:
+    enabled: false
+  ruler:
+    enabled: false
+memcached:
+  index:
+    enabled: true
+    fullnameOverride: mimir-dr-index-cache
+  frontend:
+    enabled: true
+    fullnameOverride: mimir-dr-query-cache

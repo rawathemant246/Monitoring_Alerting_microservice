@@ -1,0 +1,24 @@
+groups:
+  - name: cache_health
+    interval: 1m
+    rules:
+      - alert: QueryFrontendCacheHitRateLow
+        expr: cache:query_frontend_result:hit_ratio < 0.6
+        for: 10m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Query frontend cache hit rate below 60%"
+          description: |
+            Result cache hit ratio is {{ $value | printf "%.2f" }}. Investigate cache sizing or eviction.
+      - alert: StoreGatewayCacheHitRateLow
+        expr: cache:store_gateway_index:hit_ratio < 0.7 or cache:store_gateway_chunk:hit_ratio < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Store-gateway cache hit rate below SLO"
+          description: |
+            Cache hit ratios below target (index {{ printf "%.2f" $value }}, chunk see dashboard). Review cache sizing and eviction policies.

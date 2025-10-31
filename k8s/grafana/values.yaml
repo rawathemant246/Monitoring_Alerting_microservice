@@ -13,6 +13,14 @@ env:
     value: "tempoSearch traceqlEditor"
   - name: GF_UNIFIED_ALERTING_ENABLED
     value: "true"
+  - name: GF_LOG_MODE
+    value: console
+  - name: GF_LOG_LEVEL
+    value: info
+  - name: GF_LOG_CONSOLE_FORMAT
+    value: json
+  - name: GF_LOG_FRONTEND_ENABLED
+    value: "true"
   - name: RUNBOOK_BASE_URL
     value: "${RUNBOOK_BASE_URL}"
 envValueFrom:
@@ -70,6 +78,13 @@ grafana.ini:
     address: tempo.monitoring.svc.cluster.local:4317
     tls:
       insecure: true
+  log:
+    mode: console
+    level: info
+    console_format: json
+    filters: provisioning:debug
+  log.audit:
+    enabled: true
 datasources:
   datasources.yaml:
     apiVersion: 1
