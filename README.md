@@ -23,6 +23,8 @@ scripts/                  # Helper scripts (apply, secrets, smoke tests)
 
 ## Architecture Diagram
 
+![Monitoring and Alerting System Architecture](assets/monitering_alerting_microservice.png)
+
 ```mermaid
 graph TD
   subgraph "Clients & Workloads"
@@ -91,6 +93,23 @@ graph TD
 - kubectl ≥ 1.27 with access to your target Kubernetes cluster.
 - Helm ≥ 3.12.
 - cert-manager and (optionally) an ingress controller in the target cluster.
+
+### Installing Local Tooling Quickly
+
+```bash
+# macOS (Homebrew)
+brew install kind
+brew install helm
+
+# Debian/Ubuntu
+curl -Lo kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+chmod +x kind && sudo mv kind /usr/local/bin/kind
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update && sudo apt-get install -y helm
+```
+
+Refer to the official installation guides if you prefer another package manager or OS.
 
 ## Configuration
 
