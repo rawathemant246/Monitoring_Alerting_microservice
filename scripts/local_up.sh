@@ -149,20 +149,19 @@ subsets:
 EON
 
 echo "[4/10] Creating MinIO bucket"
-docker run --rm --network=moni minio/mc:RELEASE.2025-01-05T00-00-00Z \
-  /bin/sh -c "mc alias set local http://minio:9000 minio minio123 && mc mb --ignore-existing local/mimir" >/dev/null
+docker run --rm --network=moni --entrypoint /bin/sh minio/mc:latest \
+  -c "mc alias set local http://minio:9000 minio minio123 && mc mb --ignore-existing local/mimir-tsdb && mc mb --ignore-existing local/mimir-ruler" >/dev/null
 
 echo "[5/10] Installing Helm CRDs"
 helm repo add grafana https://grafana.github.io/helm-charts >/dev/null
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null
 helm repo update >/dev/null
-helm upgrade --install prom-crds grafana/prometheus-operator-crds --namespace monitoring --create-namespace >/dev/null
+helm upgrade --install prom-crds prometheus-community/prometheus-operator-crds --namespace monitoring --create-namespace >/dev/null
 kubectl wait --for=condition=Established crd/prometheusagents.monitoring.coreos.com --timeout=60s >/dev/null || true
 
 echo "[6/10] Deploying Mimir single-binary"
 helm upgrade --install mimir grafana/mimir-distributed \
   -n monitoring \
-  --set singleBinary=true \
   -f k8s/mimir/values-local.yaml
 
 echo "[7/10] Deploying Prometheus Agent"

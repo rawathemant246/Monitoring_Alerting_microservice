@@ -221,7 +221,7 @@ curl -sf http://localhost:8080/ready
 curl -s "http://localhost:8080/prometheus/api/v1/label/__name__/values" | jq '.data | length'
 
 # Inspect downsampled blocks in MinIO
-aws --endpoint-url http://localhost:9000 s3 ls s3://mimir --no-sign-request
+aws --endpoint-url http://localhost:9000 s3 ls s3://mimir-tsdb --no-sign-request
 ```
 
 The local deployment uses MinIO for object storage, a single-binary Mimir instance, Prometheus Agent (remote_write only), and disables mTLS/OIDC for simplicity. Services exposed via NodePort are mapped to localhost ports by `kind/local-cluster.yaml`.
