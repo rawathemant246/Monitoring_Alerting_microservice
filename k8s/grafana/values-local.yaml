@@ -1,0 +1,44 @@
+adminUser: admin
+adminPassword: admin
+serviceAccount:
+  create: true
+  name: grafana
+persistence:
+  enabled: false
+ingress:
+  enabled: false
+securityContext:
+  runAsUser: 472
+  runAsGroup: 472
+plugins: []
+service:
+  type: ClusterIP
+  port: 3000
+grafana.ini:
+  server:
+    domain: localhost
+    root_url: http://localhost:3000
+  auth:
+    disable_login_form: false
+    oauth_auto_login: false
+  users:
+    allow_sign_up: true
+    auto_assign_org_role: Viewer
+  analytics:
+    reporting_enabled: false
+  log:
+    mode: console
+    level: info
+    console_format: json
+  log.audit:
+    enabled: false
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Mimir
+        type: prometheus
+        access: proxy
+        url: http://mimir-query-frontend.monitoring.svc.cluster.local:9009
+        isDefault: true
+        editable: false

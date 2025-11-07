@@ -1,0 +1,19 @@
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: dev-null
+    receivers:
+      - name: dev-null
+service:
+  type: ClusterIP

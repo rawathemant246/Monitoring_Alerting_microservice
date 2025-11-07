@@ -1,0 +1,20 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: moni
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            runtime-config: "api/all=true"
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 3000
+        protocol: TCP
+      - containerPort: 31000
+        hostPort: 8080
+        protocol: TCP
+networking:
+  disableDefaultCNI: false
